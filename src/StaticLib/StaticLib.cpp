@@ -23,8 +23,21 @@ static unsigned int get_hash(const hash* h, unsigned int key)
 
 	// ToDo: ハッシュ関数としてhash_funcを使った
 	// オープンアドレス法によるハッシュ値を求める
-	
-	return hash_func(key, h->max_size);
+
+	int count = 0;
+	unsigned int index = hash_func(key, h->max_size);
+
+	while (count < h->max_size) {
+		if (h->nodes[index].key != ~0&& h->nodes[index].key != key) {
+			index = rehash_func(index, h->max_size);
+		}
+		else {
+			return index;
+		}
+		count++;
+	}
+
+	return ~0;//失敗
 }
 
 // ハッシュの初期化(max_sizeは~0未満)
@@ -68,25 +81,18 @@ bool add(hash* h, unsigned int key, const char* value)
 	// ToDo: ハッシュ関数としてhash_funcを使った
 	// オープンアドレス法によりキーを追加
 
-	int count = 0;
-	struct hash_* p = h;
 	unsigned int index = get_hash(h, key);
 
-	while (count < h->max_size) {
-		if (p->nodes[index].key == ~0) {
-			p->nodes[index].key = key;
-			for (int i = 0; i < MAX_DATA; i++) {
-				p->nodes[index].value[i] = value[i];
-			}
-			return true;
+	if (index != ~0) {
+		h->nodes[index].key = key;
+		for (int i = 0; i < MAX_DATA; i++) {
+			h->nodes[index].value[i] = value[i];
 		}
-		else {
-			index = rehash_func(index, h->max_size);
-		}
-		count++;
+		return true;
 	}
 
 	return false;
+
 }
 
 // keyの値を見てノードを検索して、値を取得する(なければNULLを返す)
@@ -97,14 +103,10 @@ const char* get(const hash* h, unsigned int key)
 	// ToDo: keyから値が格納されている場所を求め、値の場所を返す
 
 	int count = 0;
-	unsigned int index = get_hash(h, key);
 
-	while (count < h->max_size) {
-		if (h->nodes[index].key == key) {
-			return h->nodes[index].value;
-		}
-		else {
-			rehash_func(index, h->max_size);
+	while (count<h->max_size) {
+		if (h->nodes[count].key == key) {
+			return h->nodes[count].value;
 		}
 		count++;
 	}
