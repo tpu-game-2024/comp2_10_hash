@@ -15,6 +15,14 @@ static unsigned int get_hash(const hash* h, unsigned int key)
 	if (key == ~0) return ~0;
 
 	// ToDo: ハッシュ関数としてhash_funcを使った
+	unsigned int hash = hash_func(key, h->max_size);
+	unsigned int original_hash = hash;
+
+	while (h->nodes[hash].key != ~0 && h->nodes[hash].key != key)
+	{
+		hash = (hash + 1) % h->max_size;
+		if (hash == original_hash) return ~0; // Full circle, key not found
+	}
 	// オープンアドレス法によるハッシュ値を求める
 	return ~0;
 }
@@ -58,6 +66,23 @@ bool add(hash* h, unsigned int key, const char* value)
 	if (key == ~0) return NULL;
 
 	// ToDo: ハッシュ関数としてhash_funcを使った
+	unsigned int hash = get_hash(h, key);
+	if (hash == ~0) return false;
+
+	if (h->nodes[hash].key == key) {
+		// Key already exists, update the value
+		strncpy_s(h->nodes[hash].value, sizeof(h->nodes[hash].value), value, _TRUNCATE);
+		return false;
+	}
+
+	// Find an empty slot using open addressing
+	while (h->nodes[hash].key != ~0) {
+		hash = (hash + 1) % h->max_size;
+	}
+
+	h->nodes[hash].key = key;
+	strncpy_s(h->nodes[hash].value, sizeof(h->nodes[hash].value), value, _TRUNCATE);
+
 	// オープンアドレス法によりキーを追加
 	return false;
 }
@@ -68,6 +93,8 @@ const char* get(const hash* h, unsigned int key)
 	if (key == ~0) return NULL;
 
 	// ToDo: keyから値が格納されている場所を求め、値の場所を返す
+	unsigned int hash = get_hash(h, key);
+	if (hash == ~0 || h->nodes[hash].key == ~0) return NULL;
 	return NULL;
 }
 
