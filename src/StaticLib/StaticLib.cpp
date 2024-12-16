@@ -16,6 +16,14 @@ static unsigned int get_hash(const hash* h, unsigned int key)
 
 	// ToDo: ハッシュ関数としてhash_funcを使った
 	// オープンアドレス法によるハッシュ値を求める
+
+	unsigned int index = hash_func(key, h->max_size);
+	for (unsigned int i = 0; i < h->max_size; i++) {
+		unsigned int probe = (index + i) % h->max_size;
+		if (h->nodes[probe].key == key || h->nodes[probe].key == ~0) {
+			return probe;
+		}
+	}
 	return ~0;
 }
 
@@ -59,6 +67,22 @@ bool add(hash* h, unsigned int key, const char* value)
 
 	// ToDo: ハッシュ関数としてhash_funcを使った
 	// オープンアドレス法によりキーを追加
+
+	unsigned int index = hash_func(key, h->max_size);
+	for (unsigned int i = 0; i < h->max_size; i++) {
+		unsigned int probe = (index + i) % h->max_size;
+		if (h->nodes[probe].key == ~0) {
+			h->nodes[probe].key = key;
+			strncpy_s(h->nodes[probe].value, value, sizeof(h->nodes[probe].value) - 1);
+			h->nodes[probe].value[sizeof(h->nodes[probe].value) - 1] = '\0';
+			return true;
+		}
+		else if (h->nodes[probe].key == key) {
+			strncpy_s(h->nodes[probe].value, value, sizeof(h->nodes[probe].value) - 1);
+			h->nodes[probe].value[sizeof(h->nodes[probe].value) - 1] = '\0';
+			return true;
+		}
+	}
 	return false;
 }
 
@@ -68,6 +92,18 @@ const char* get(const hash* h, unsigned int key)
 	if (key == ~0) return NULL;
 
 	// ToDo: keyから値が格納されている場所を求め、値の場所を返す
+
+	if (h == NULL) return NULL;
+	unsigned int index = hash_func(key, h->max_size);
+	for (unsigned int i = 0; i < h->max_size; i++) {
+		unsigned int probe = (index + i) % h->max_size;
+		if (h->nodes[probe].key == key) {
+			return h->nodes[probe].value;
+		}
+		else if (h->nodes[probe].key == ~0) {
+			break; // Stop searching when an empty slot is found
+		}
+	}
 	return NULL;
 }
 
