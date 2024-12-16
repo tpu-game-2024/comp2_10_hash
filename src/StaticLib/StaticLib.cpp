@@ -16,6 +16,13 @@ static unsigned int get_hash(const hash* h, unsigned int key)
 
 	// ToDo: ハッシュ関数としてhash_funcを使った
 	// オープンアドレス法によるハッシュ値を求める
+	unsigned int index = hash_func(key, h->max_size);
+	for (unsigned int i = 0; i < h->max_size; i++) {
+		unsigned int probe = (index + i) % h->max_size;
+		if (h->nodes[probe].key == key || h->nodes[probe].key == ~0) {
+			return probe;
+		}
+	}
 	return ~0;
 }
 
@@ -53,23 +60,45 @@ void finalize(hash* h)
 // keyの値を見てノードを追加する(追加できなかったらfalseを返す)
 bool add(hash* h, unsigned int key, const char* value)
 {
-	if (h == NULL) return false;
-	if (h->max_size == ~0) return false;
-	if (key == ~0) return NULL;
+	if (h == NULL || h->nodes == NULL || value == NULL) return false;
 
-	// ToDo: ハッシュ関数としてhash_funcを使った
-	// オープンアドレス法によりキーを追加
-	return false;
+	unsigned int index = hash_func(key, h->max_size);
+	for (unsigned int i = 0; i < h->max_size; i++) {
+		unsigned int probe = (index + i) % h->max_size;
+		if (h->nodes[probe].key == ~0) { // 空きスロットに追加
+			h->nodes[probe].key = key;
+			// 安全な文字列コピー
+			strncpy_s(h->nodes[probe].value, sizeof(h->nodes[probe].value), value, sizeof(h->nodes[probe].value) - 1);
+			return true;
+		}
+		else if (h->nodes[probe].key == key) { // キーが既に存在する場合
+			// 値を上書き
+			strncpy_s(h->nodes[probe].value, sizeof(h->nodes[probe].value), value, sizeof(h->nodes[probe].value) - 1);
+			return true;
+		}
+	}
+	return false; // ハッシュテーブルが満杯の場合
 }
+
 
 // keyの値を見てノードを検索して、値を取得する(なければNULLを返す)
 const char* get(const hash* h, unsigned int key)
 {
-	if (key == ~0) return NULL;
+	if (h == NULL || h->nodes == NULL || key == ~0) return NULL;
 
-	// ToDo: keyから値が格納されている場所を求め、値の場所を返す
-	return NULL;
+	unsigned int index = hash_func(key, h->max_size);
+	for (unsigned int i = 0; i < h->max_size; i++) {
+		unsigned int probe = (index + i) % h->max_size;
+		if (h->nodes[probe].key == key) { // 該当するキーが見つかった
+			return h->nodes[probe].value;
+		}
+		else if (h->nodes[probe].key == ~0) {
+			break; // 空きスロットに到達したら終了
+		}
+	}
+	return NULL; // キーが見つからない場合
 }
+
 
 // ハッシュの値を取得する(デバッグ用)
 int debug_get_hash(const hash* h, unsigned int key)
